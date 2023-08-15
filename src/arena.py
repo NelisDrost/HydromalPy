@@ -11,7 +11,7 @@ def load_data(fname):
     # Calculate distance gradient
     y_grad, x_grad = np.gradient(distmap)
 
-    return locations, distmap, -x_grad, y_grad
+    return np.flipud(locations), np.flipud(distmap), -np.flipud(x_grad), np.flipud(y_grad)
 
 
 feed_sites, feed_distance, feed_xgrad, feed_ygrad = load_data('../data/feed_sites.mat')
