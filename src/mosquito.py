@@ -75,7 +75,7 @@ def isalive(pos, bounds):
 
 def plot(bounds, mosquitoes, trails):
     """Plots mosquito trails and current position"""
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(14.4, 10))
     # Setup axes
     ax.set_xlim(bounds[0, :])
     ax.set_ylim(bounds[1, :])
@@ -166,7 +166,7 @@ if __name__ == '__main__':
         trails_fed = np.vstack([trails_fed, fed])
 
         fig, _ = plot(bounds, mosquitoes, trails)
-        fig.savefig(f'../output/{t:03d}.png')
+        fig.savefig(f'../output/{t:03d}.png', dpi=600)
         plt.close(fig)
 
     plot(bounds, mosquitoes, trails)
