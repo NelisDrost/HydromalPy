@@ -103,6 +103,8 @@ if __name__ == '__main__':
     trails = np.copy([mosquitoes])
     trails_fed = np.copy([fed])
 
+    grad_weight = 0.3
+
     for t in range(80):
         alive = isalive(mosquitoes, bounds)
         n_mos = len(alive)
@@ -116,19 +118,22 @@ if __name__ == '__main__':
         # Follow gradient
         feed_idx = alive & ~fed
         move_to_food = np.zeros_like(mosquitoes)
-        move_to_food[feed_idx] = grad_move(mosquitoes[feed_idx], arena.feed_xgrad, arena.feed_ygrad, speed[feed_idx])
+        move_to_food[feed_idx] = grad_move(mosquitoes[feed_idx], arena.feed_xgrad, arena.feed_ygrad, grad_weight * speed[feed_idx])
 
         breed_idx = alive & fed
         move_to_breed = np.zeros_like(mosquitoes)
-        move_to_breed[breed_idx] = grad_move(mosquitoes[breed_idx], arena.breed_xgrad, arena.breed_ygrad, speed[breed_idx])
+        move_to_breed[breed_idx] = grad_move(mosquitoes[breed_idx], arena.breed_xgrad, arena.breed_ygrad, grad_weight * speed[breed_idx])
 
         # Combine
         mosquitoes += heading_move + move_to_food + move_to_breed
+        alive = isalive(mosquitoes, bounds)
 
         # Check if mosquitoes have reached food/breeding site
+        feed_idx = alive & ~fed  # recalculate as may have moved out of bounds
         can_feed = np.zeros_like(fed)
         can_feed[feed_idx] = is_at_site(mosquitoes[feed_idx], arena.feed_sites)
 
+        breed_idx = alive & fed
         can_breed = np.zeros_like(fed)
         can_breed[breed_idx] = is_at_site(mosquitoes[breed_idx], arena.breed_sites)
 
