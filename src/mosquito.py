@@ -3,6 +3,7 @@ import os
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.collections import LineCollection
+from tqdm import trange
 
 import arena
 
@@ -114,7 +115,7 @@ if __name__ == '__main__':
 
     grad_weight = 0.3
 
-    for t in range(80):
+    for t in trange(80):
         alive = isalive(mosquitoes, bounds)
         n_mos = len(alive)
 
@@ -166,7 +167,7 @@ if __name__ == '__main__':
         trails_fed = np.vstack([trails_fed, fed])
 
         fig, _ = plot(bounds, mosquitoes, trails)
-        fig.savefig(f'../output/{t:03d}.png', dpi=600)
+        fig.savefig(f'../output/{t:03d}.png', dpi=400)
         plt.close(fig)
 
     plot(bounds, mosquitoes, trails)
