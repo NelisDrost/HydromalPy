@@ -47,6 +47,20 @@ def grad_move(pos, x_grad, y_grad, speed):
     return np.c_[x_move, y_move]
 
 
+def is_at_site(pos, sites):
+    """
+    Check if a point is at a site
+    :param pos: current position (Nx2 array)
+    :param sites: site locations (HxW array)
+    :return: boolean array of length N
+    """
+    # Linear index of position
+    idx = np.floor(pos[:, 1]).astype(int) * sites.shape[1] + np.floor(pos[:, 0]).astype(int)
+
+    # Check if at site
+    return sites.flat[idx] != 0
+
+
 def isalive(pos, bounds):
     """
     Check if a point is alive (i.e. within the bounds)
@@ -82,10 +96,12 @@ if __name__ == '__main__':
     n = 100
     mosquitoes = np.random.uniform(bounds[:, 0], bounds[:, 1], size=(n, 2))
     headings = np.random.uniform(0, 2*np.pi, size=n)
+    fed = np.zeros_like(headings).astype(bool)
 
     trails = np.copy([mosquitoes])
+    trails_fed = np.copy(fed)
 
-    for t in range(100):
+    for t in range(500):
         alive = isalive(mosquitoes, bounds)
         old_pos = mosquitoes.copy()
 
@@ -95,13 +111,23 @@ if __name__ == '__main__':
         heading_move = move(headings, speed)
 
         # Follow gradient
+        feed_idx = alive & ~fed
         move_to_food = np.zeros_like(mosquitoes)
-        move_to_food[alive] = grad_move(mosquitoes[alive], arena.feed_xgrad, arena.feed_ygrad, speed[alive])
+        move_to_food[feed_idx] = grad_move(mosquitoes[feed_idx], arena.feed_xgrad, arena.feed_ygrad, speed[feed_idx])
+
+        breed_idx = alive & fed
+        move_to_breed = np.zeros_like(mosquitoes)
+        move_to_breed[breed_idx] = grad_move(mosquitoes[breed_idx], arena.breed_xgrad, arena.breed_ygrad, speed[breed_idx])
 
         # Combine
-        mosquitoes += heading_move + move_to_food
+        mosquitoes += heading_move + move_to_food + move_to_breed
+
+        # Check if mosquitoes have reached food/breeding site
+        fed[feed_idx] = is_at_site(mosquitoes[feed_idx], arena.feed_sites)
+        fed[breed_idx] = ~is_at_site(mosquitoes[breed_idx], arena.breed_sites)
 
         # Records movement trail
         trails = np.concatenate([trails, [mosquitoes]], axis=0)
+        trails_fed = np.vstack([trails_fed, fed])
 
     plot(bounds, mosquitoes, trails)
