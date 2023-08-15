@@ -84,7 +84,9 @@ def plot(bounds, mosquitoes, trails):
     # Plot current position
     ax.scatter(mosquitoes[:, 0], mosquitoes[:, 1], color='k', s=2, alpha=0.5)
     # Plot trails
-    lines = LineCollection(trails.transpose((1, 0, 2)), colors='k', alpha=0.1, linewidths=1)
+    segs = trails.transpose((1, 0, 2))
+    segs = np.ma.masked_where(segs == -999, segs)
+    lines = LineCollection(segs, colors='k', alpha=0.1, linewidths=1)
     ax.add_collection(lines)
 
     plt.show()
@@ -99,16 +101,17 @@ if __name__ == '__main__':
     fed = np.zeros_like(headings).astype(bool)
 
     trails = np.copy([mosquitoes])
-    trails_fed = np.copy(fed)
+    trails_fed = np.copy([fed])
 
-    for t in range(500):
+    for t in range(80):
         alive = isalive(mosquitoes, bounds)
-        old_pos = mosquitoes.copy()
+        n_mos = len(alive)
 
         # Turn & Move
         headings = turn(headings, np.pi/2)
-        speed = np.fmax(0.01, np.random.normal(1, 0.5, size=(n, 1)))
-        heading_move = move(headings, speed)
+        speed = np.fmax(0.01, np.random.normal(1, 0.5, size=(n_mos, 1)))
+        heading_move = np.zeros_like(mosquitoes)
+        heading_move[alive] = move(headings[alive], speed[alive])
 
         # Follow gradient
         feed_idx = alive & ~fed
@@ -123,8 +126,26 @@ if __name__ == '__main__':
         mosquitoes += heading_move + move_to_food + move_to_breed
 
         # Check if mosquitoes have reached food/breeding site
-        fed[feed_idx] = is_at_site(mosquitoes[feed_idx], arena.feed_sites)
-        fed[breed_idx] = ~is_at_site(mosquitoes[breed_idx], arena.breed_sites)
+        can_feed = np.zeros_like(fed)
+        can_feed[feed_idx] = is_at_site(mosquitoes[feed_idx], arena.feed_sites)
+
+        can_breed = np.zeros_like(fed)
+        can_breed[breed_idx] = is_at_site(mosquitoes[breed_idx], arena.breed_sites)
+
+        fed[feed_idx & can_feed] = True
+        fed[breed_idx & can_breed] = False
+
+        # Create new mosquitoes
+        new_mosquitoes = mosquitoes[can_breed].copy()
+        n_new = new_mosquitoes.shape[0]
+        new_headings = np.random.uniform(0, 2*np.pi, size=n_new)
+
+        mosquitoes = np.concatenate([mosquitoes, new_mosquitoes], axis=0)
+        headings = np.concatenate([headings, new_headings], axis=0)
+
+        fed = np.concatenate([fed, np.zeros_like(new_headings).astype(bool)], axis=0)
+        trails = np.pad(trails, ((0, 0), (0, n_new), (0, 0)), mode='constant', constant_values=-999)
+        trails_fed = np.pad(trails_fed, ((0, 0), (0, n_new)), mode='constant', constant_values=0)
 
         # Records movement trail
         trails = np.concatenate([trails, [mosquitoes]], axis=0)
