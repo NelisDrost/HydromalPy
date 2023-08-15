@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.collections import LineCollection
@@ -81,18 +83,25 @@ def plot(bounds, mosquitoes, trails):
     ax.set_xticks([])
     ax.set_yticks([])
 
+    # Show habitat + houses
+    plt.imshow(np.ma.masked_where(arena.breed_distance > 10, arena.breed_distance), alpha=0.2)
+    y, x = np.where(arena.feed_sites != 0)
+    ax.scatter(x, y, color='brown', s=2, alpha=0.5)
+
     # Plot current position
     ax.scatter(mosquitoes[:, 0], mosquitoes[:, 1], color='k', s=2, alpha=0.5)
     # Plot trails
     segs = trails.transpose((1, 0, 2))
     segs = np.ma.masked_where(segs == -999, segs)
-    lines = LineCollection(segs, colors='k', alpha=0.1, linewidths=1)
+    lines = LineCollection(segs, colors='k', alpha=0.2, linewidths=1)
     ax.add_collection(lines)
 
-    plt.show()
+    return fig, ax
 
 
 if __name__ == '__main__':
+    os.makedirs('../output', exist_ok=True)
+
     height, width = arena.feed_sites.shape
     bounds = np.array([[0, width], [0, height]])
     n = 100
@@ -156,4 +165,9 @@ if __name__ == '__main__':
         trails = np.concatenate([trails, [mosquitoes]], axis=0)
         trails_fed = np.vstack([trails_fed, fed])
 
+        fig, _ = plot(bounds, mosquitoes, trails)
+        fig.savefig(f'../output/{t:03d}.png')
+        plt.close(fig)
+
     plot(bounds, mosquitoes, trails)
+    plt.show()
