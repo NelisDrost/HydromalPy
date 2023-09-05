@@ -17,9 +17,21 @@ def turn(heading, turn_rate_sd):
     return heading + np.random.normal(0, turn_rate_sd, size=heading.shape)
 
 
+def get_speed(shape, speed_mean=1, speed_sd=0.5):
+    """
+    Get a random speed for each mosquito
+    :param shape: output shape
+    :param speed_mean: mean speed
+    :param speed_sd: standard deviation
+    :return: speed array
+    """
+    # Non-zero minimum speed avoids issues analysing heading later
+    return np.fmax(0.01, np.random.normal(speed_mean, speed_sd, size=shape))
+
+
 def move(heading, speed):
     """
-    Move a point in a given direction
+    Convert speed and heading to vector move
     :param pos: current position (array)
     :param heading: current heading (array)
     :param speed: current speed (array)
@@ -30,12 +42,12 @@ def move(heading, speed):
 
 def grad_move(pos, x_grad, y_grad, speed):
     """
-    Move a point in the direction of the gradient
+    Move points along a gradient
     :param pos: current position (Nx2 array)
     :param x_grad: x gradient (HxW array)
     :param y_grad: y gradient (HxW array)
     :param speed: current speed (Nx array)
-    :return: movement (Nx2 array)
+    :return: vector movement for each input pos (Nx2 array)
     """
     # Linear index of position
     idx = np.floor(pos[:, 1]).astype(int) * x_grad.shape[1] + np.floor(pos[:, 0]).astype(int)
@@ -43,9 +55,6 @@ def grad_move(pos, x_grad, y_grad, speed):
     # Get gradient at current position
     x_move = x_grad.flat[idx] * speed.flatten()
     y_move = y_grad.flat[idx] * speed.flatten()
-
-    # Calculate heading
-    # heading = np.arctan2(y_grad, x_grad)
 
     return np.c_[x_move, y_move]
 
@@ -137,7 +146,8 @@ if __name__ == '__main__':
 
         # Turn & Move
         headings = turn(headings, np.pi/2)
-        speed = np.fmax(0.01, np.random.normal(1, 0.5, size=(n_mos, 1)))
+        speed = get_speed((n_mos, 1), 1, 0.5)
+
         heading_move = np.zeros_like(mosquitoes)
         heading_move[alive] = move(headings[alive], speed[alive])
 
