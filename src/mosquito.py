@@ -162,10 +162,10 @@ if __name__ == '__main__':
 
         # Combine
         mosquitoes += heading_move + move_to_food + move_to_breed
-        alive = isalive(mosquitoes, age, bounds)
 
         # Check if mosquitoes have reached food/breeding site
-        feed_idx = alive & ~fed & (timer == 0)  # recalculate as may have moved out of bounds
+        alive = isalive(mosquitoes, age, bounds)  # recalculate as may have moved out of bounds
+        feed_idx = alive & ~fed & (timer == 0)
         can_feed = np.zeros_like(fed)
         can_feed[feed_idx] = is_at_site(mosquitoes[feed_idx], arena.feed_sites)
 
